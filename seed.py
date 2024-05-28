@@ -21,3 +21,4 @@ with app.app_context():
 
     # Commit--otherwise, this never gets saved!
     db.session.commit()
+
