@@ -1,5 +1,5 @@
 import unittest
-from app import app, db, User
+from app import app, db, User, Post
 from bs4 import BeautifulSoup
 
 class UserModelTestCase(unittest.TestCase):
@@ -85,6 +85,59 @@ class UserModelTestCase(unittest.TestCase):
             response = self.client.post(f'/users/{user_id}/delete', follow_redirects=True)
             self.assertEqual(response.status_code, 200)
             self.assertNotIn(b'Test User', response.data)
+
+    def test_show_user_posts(self):
+        """Test showing a user's posts. Assert that the user's posts are displayed on the page."""
+        with app.app_context():
+            user = User(first_name='Test', last_name='User', image_url='https://cdn-icons-png.flaticon.com/128/1077/1077063.png')
+            db.session.add(user)
+            db.session.commit()
+            user_id = user.id
+
+            response = self.client.get(f'/users/{user_id}')
+            self.assertEqual(response.status_code, 200)
+            self.assertIn(b'Posts', response.data)
+
+    def test_add_user_post(self):
+        """Test adding a new post. Assert that the post is added and displayed on the page."""
+        with app.app_context():
+            user = User(first_name='Test', last_name='User', image_url='https://cdn-icons-png.flaticon.com/128/1077/1077063.png')
+            db.session.add(user)
+            db.session.commit()
+            user_id = user.id
+
+            response = self.client.post(f'/users/{user_id}/posts/new', data={
+                'title': 'Test Post',
+                'content': 'Test Content'
+            }, follow_redirects=True)
+            
+            self.assertEqual(response.status_code, 200)
+            self.assertIn(b'Test Post', response.data)
+
+    def test_delete_user_post(self):
+        """Test deleting a post. Assert that the post is deleted and not displayed on the page."""
+        with app.app_context():
+            user = User(first_name='Test', last_name='User', image_url='https://cdn-icons-png.flaticon.com/128/1077/1077063.png')
+            db.session.add(user)
+            db.session.commit()
+            user_id = user.id
+
+            response = self.client.post(f'/users/{user_id}/posts/new', data={
+                'title': 'Test Post',
+                'content': 'Test Content'
+            }, follow_redirects=True)
+            
+            self.assertEqual(response.status_code, 200)
+            self.assertIn(b'Test Post', response.data)
+
+            # Retrieve the created post
+            post = Post.query.filter_by(user_id=user_id).first()
+            post_id = post.id
+            
+            # Delete the post
+            response = self.client.post(f'/posts/{post_id}/delete', follow_redirects=True)
+            self.assertEqual(response.status_code, 200)
+            self.assertNotIn(b'Test Post', response.data)
 
 if __name__ == '__main__':
     unittest.main()
