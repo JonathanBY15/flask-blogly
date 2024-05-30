@@ -1,7 +1,7 @@
 """Blogly application."""
 
 from flask import Flask, render_template, redirect, request
-from models import db, connect_db, User, Post, DEFAULT_IMAGE_URL
+from models import db, connect_db, User, Post, Tag, DEFAULT_IMAGE_URL
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:walmart48@localhost/blogly'
@@ -133,3 +133,59 @@ def delete_post(post_id):
     db.session.commit()
 
     return redirect(f'/users/{user_id}')
+
+@app.route('/tags')
+def tags_list():
+    """Show list of tags."""
+    tags = Tag.query.all()
+    return render_template('tags.html', tags=tags)
+
+@app.route('/tags/<int:tag_id>')
+def show_tag(tag_id):
+    """Show tag details."""
+    tag = Tag.query.get_or_404(tag_id)
+    return render_template('tag.html', tag=tag)
+
+@app.route('/tags/new')
+def new_tag():
+    """Show form to add a new tag."""
+    return render_template('new_tag.html')
+
+@app.route('/tags/new', methods=['POST'])
+def add_tag():
+    """Add tag and redirect to /tags."""
+    name = request.form['name']
+
+    new_tag = Tag(name=name)
+
+    db.session.add(new_tag)
+    db.session.commit()
+
+    return redirect('/tags')
+
+@app.route('/tags/<int:tag_id>/edit')
+def edit_tag(tag_id):
+    """Show form to edit a tag."""
+    tag = Tag.query.get_or_404(tag_id)
+    return render_template('edit_tag.html', tag=tag)
+
+@app.route('/tags/<int:tag_id>/edit', methods=['POST'])
+def update_tag(tag_id):
+    """Update tag and redirect to /tags."""
+    tag = Tag.query.get_or_404(tag_id)
+    tag.name = request.form['name']
+
+    db.session.add(tag)
+    db.session.commit()
+
+    return redirect('/tags')
+
+@app.route('/tags/<int:tag_id>/delete', methods=['POST', 'GET'])
+def delete_tag(tag_id):
+    """Delete tag and redirect to /tags."""
+    tag = Tag.query.get_or_404(tag_id)
+
+    db.session.delete(tag)
+    db.session.commit()
+
+    return redirect('/tags')
